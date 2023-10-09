@@ -464,8 +464,7 @@ impl<'t> TextEdit<'t> {
             galley.size().x.max(wrap_width)
         };
         let desired_height = (desired_height_rows.at_least(1) as f32) * row_height;
-        let desired_size = vec2(desired_width, galley.size().y.max(desired_height))
-            .at_least(min_size - margin * 2.0);
+        let desired_size = vec2(desired_width, galley.size().y.max(desired_height)).at_least(min_size - margin * 2.0);
 
         let (auto_id, rect) = ui.allocate_space(desired_size);
 
@@ -482,8 +481,7 @@ impl<'t> TextEdit<'t> {
         // dragging select text, or scroll the enclosing [`ScrollArea`] (if any)?
         // Since currently copying selected text in not supported on `eframe` web,
         // we prioritize touch-scrolling:
-        let allow_drag_to_select =
-            ui.input(|i| !i.any_touches()) || ui.memory(|mem| mem.has_focus(id));
+        let allow_drag_to_select = ui.input(|i| !i.any_touches()) || ui.memory(|mem| mem.has_focus(id));
 
         let sense = if interactive {
             if allow_drag_to_select {
@@ -506,22 +504,11 @@ impl<'t> TextEdit<'t> {
 
                 // TODO(emilk): drag selected text to either move or clone (ctrl on windows, alt on mac)
                 let singleline_offset = vec2(state.singleline_offset, 0.0);
-                let cursor_at_pointer =
-                    galley.cursor_from_pos(pointer_pos - response.rect.min + singleline_offset);
+                let cursor_at_pointer = galley.cursor_from_pos(pointer_pos - response.rect.min + singleline_offset);
 
-                if ui.visuals().text_cursor_preview
-                    && response.hovered()
-                    && ui.input(|i| i.pointer.is_moving())
-                {
+                if ui.visuals().text_cursor_preview && response.hovered() && ui.input(|i| i.pointer.is_moving()) {
                     // preview:
-                    paint_cursor_end(
-                        ui,
-                        row_height,
-                        &painter,
-                        response.rect.min,
-                        &galley,
-                        &cursor_at_pointer,
-                    );
+                    paint_cursor_end(ui, row_height, &painter, response.rect.min, &galley, &cursor_at_pointer);
                 }
 
                 if response.double_clicked() {
@@ -553,9 +540,7 @@ impl<'t> TextEdit<'t> {
                         } else {
                             state.set_cursor_range(Some(CursorRange::one(cursor_at_pointer)));
                         }
-                    } else if ui.input(|i| i.pointer.any_down())
-                        && response.is_pointer_button_down_on()
-                    {
+                    } else if ui.input(|i| i.pointer.any_down()) && response.is_pointer_button_down_on() {
                         // drag to select text:
                         if let Some(mut cursor_range) = state.cursor_range(&galley) {
                             cursor_range.primary = cursor_at_pointer;
@@ -575,11 +560,7 @@ impl<'t> TextEdit<'t> {
         if interactive && ui.memory(|mem| mem.has_focus(id)) {
             ui.memory_mut(|mem| mem.lock_focus(id, lock_focus));
 
-            let default_cursor_range = if cursor_at_end {
-                CursorRange::one(galley.end())
-            } else {
-                CursorRange::default()
-            };
+            let default_cursor_range = if cursor_at_end { CursorRange::one(galley.end()) } else { CursorRange::default() };
 
             let (changed, new_cursor_range) = events(
                 ui,
@@ -625,9 +606,7 @@ impl<'t> TextEdit<'t> {
                 }
             }
 
-            offset_x = offset_x
-                .at_most(galley.size().x - desired_size.x)
-                .at_least(0.0);
+            offset_x = offset_x.at_most(galley.size().x - desired_size.x).at_least(0.0);
 
             state.singleline_offset = offset_x;
             text_draw_pos -= vec2(offset_x, 0.0);
@@ -635,9 +614,7 @@ impl<'t> TextEdit<'t> {
             state.singleline_offset = align_offset;
         }
 
-        let selection_changed = if let (Some(cursor_range), Some(prev_cursor_range)) =
-            (cursor_range, prev_cursor_range)
-        {
+        let selection_changed = if let (Some(cursor_range), Some(prev_cursor_range)) = (cursor_range, prev_cursor_range) {
             prev_cursor_range.as_ccursor_range() != cursor_range.as_ccursor_range()
         } else {
             false
@@ -663,14 +640,7 @@ impl<'t> TextEdit<'t> {
                     paint_cursor_selection(ui, &painter, text_draw_pos, &galley, &cursor_range);
 
                     if text.is_mutable() {
-                        let cursor_pos = paint_cursor_end(
-                            ui,
-                            row_height,
-                            &painter,
-                            text_draw_pos,
-                            &galley,
-                            &cursor_range.primary,
-                        );
+                        let cursor_pos = paint_cursor_end(ui, row_height, &painter, text_draw_pos, &galley, &cursor_range.primary);
 
                         let is_fully_visible = ui.clip_rect().contains_rect(rect); // TODO: remove this HACK workaround for https://github.com/emilk/egui/issues/1531
                         if (response.changed || selection_changed) && !is_fully_visible {
@@ -700,28 +670,14 @@ impl<'t> TextEdit<'t> {
         state.clone().store(ui.ctx(), id);
 
         if response.changed {
-            response.widget_info(|| {
-                WidgetInfo::text_edit(
-                    mask_if_password(password, prev_text.as_str()),
-                    mask_if_password(password, text.as_str()),
-                )
-            });
+            response.widget_info(|| WidgetInfo::text_edit(mask_if_password(password, prev_text.as_str()), mask_if_password(password, text.as_str())));
         } else if selection_changed {
             let cursor_range = cursor_range.unwrap();
-            let char_range =
-                cursor_range.primary.ccursor.index..=cursor_range.secondary.ccursor.index;
-            let info = WidgetInfo::text_selection_changed(
-                char_range,
-                mask_if_password(password, text.as_str()),
-            );
+            let char_range = cursor_range.primary.ccursor.index..=cursor_range.secondary.ccursor.index;
+            let info = WidgetInfo::text_selection_changed(char_range, mask_if_password(password, text.as_str()));
             response.output_event(OutputEvent::TextSelectionChanged(info));
         } else {
-            response.widget_info(|| {
-                WidgetInfo::text_edit(
-                    mask_if_password(password, prev_text.as_str()),
-                    mask_if_password(password, text.as_str()),
-                )
-            });
+            response.widget_info(|| WidgetInfo::text_edit(mask_if_password(password, prev_text.as_str()), mask_if_password(password, text.as_str())));
         }
 
         #[cfg(feature = "accesskit")]
@@ -790,8 +746,7 @@ impl<'t> TextEdit<'t> {
                             for glyph in &row.glyphs {
                                 let is_word_char = is_word_char(glyph.chr);
                                 if is_word_char && was_at_word_end {
-                                    word_lengths
-                                        .push((character_lengths.len() - last_word_start) as _);
+                                    word_lengths.push((character_lengths.len() - last_word_start) as _);
                                     last_word_start = character_lengths.len();
                                 }
                                 was_at_word_end = !is_word_char;
@@ -834,9 +789,7 @@ impl<'t> TextEdit<'t> {
 
 fn mask_if_password(is_password: bool, text: &str) -> String {
     fn mask_password(text: &str) -> String {
-        std::iter::repeat(epaint::text::PASSWORD_REPLACEMENT_CHAR)
-            .take(text.chars().count())
-            .collect::<String>()
+        std::iter::repeat(epaint::text::PASSWORD_REPLACEMENT_CHAR).take(text.chars().count()).collect::<String>()
     }
 
     if is_password {
@@ -849,20 +802,14 @@ fn mask_if_password(is_password: bool, text: &str) -> String {
 // ----------------------------------------------------------------------------
 
 #[cfg(feature = "accesskit")]
-fn ccursor_from_accesskit_text_position(
-    id: Id,
-    galley: &Galley,
-    position: &accesskit::TextPosition,
-) -> Option<CCursor> {
+fn ccursor_from_accesskit_text_position(id: Id, galley: &Galley, position: &accesskit::TextPosition) -> Option<CCursor> {
     let mut total_length = 0usize;
     for (i, row) in galley.rows.iter().enumerate() {
         let row_id = id.with(i);
         if row_id.accesskit_id() == position.node {
             return Some(CCursor {
                 index: total_length + position.character_index,
-                prefer_next_row: !(position.character_index == row.glyphs.len()
-                    && !row.ends_with_newline
-                    && (i + 1) < galley.rows.len()),
+                prefer_next_row: !(position.character_index == row.glyphs.len() && !row.ends_with_newline && (i + 1) < galley.rows.len()),
             });
         }
         total_length += row.glyphs.len() + (row.ends_with_newline as usize);
@@ -889,10 +836,10 @@ fn events(
 
     // We feed state to the undoer both before and after handling input
     // so that the undoer creates automatic saves even when there are no events for a while.
-    state.undoer.lock().feed_state(
-        ui.input(|i| i.time),
-        &(cursor_range.as_ccursor_range(), text.as_str().to_owned()),
-    );
+    state
+        .undoer
+        .lock()
+        .feed_state(ui.input(|i| i.time), &(cursor_range.as_ccursor_range(), text.as_str().to_owned()));
 
     let copy_if_not_password = |ui: &Ui, text: String| {
         if !password {
@@ -965,13 +912,11 @@ fn events(
                 }
             }
             Event::Key {
-                key: Key::Enter,
-                pressed: true,
-                ..
+                key: Key::Enter, pressed: true, ..
             } => {
                 if multiline {
                     let mut ccursor = delete_selected(text, &cursor_range);
-                    insert_text(&mut ccursor, text, "\n", char_limit);
+                    insert_text(&mut ccursor, text, "\r\n", char_limit);
                     // TODO(emilk): if code editor, auto-indent by same leading tabs, + one if the lines end on an opening bracket
                     Some(CCursorRange::one(ccursor))
                 } else {
@@ -986,11 +931,7 @@ fn events(
                 ..
             } if modifiers.command && !modifiers.shift => {
                 // TODO(emilk): redo
-                if let Some((undo_ccursor_range, undo_txt)) = state
-                    .undoer
-                    .lock()
-                    .undo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned()))
-                {
+                if let Some((undo_ccursor_range, undo_txt)) = state.undoer.lock().undo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned())) {
                     text.replace(undo_txt);
                     Some(*undo_ccursor_range)
                 } else {
@@ -999,10 +940,7 @@ fn events(
             }
 
             Event::Key {
-                key,
-                pressed: true,
-                modifiers,
-                ..
+                key, pressed: true, modifiers, ..
             } => on_key_press(&mut cursor_range, text, galley, *key, modifiers),
 
             Event::CompositionStart => {
@@ -1045,10 +983,8 @@ fn events(
                 data: Some(accesskit::ActionData::SetTextSelection(selection)),
             }) => {
                 if id.accesskit_id() == *target {
-                    let primary =
-                        ccursor_from_accesskit_text_position(id, galley, &selection.focus);
-                    let secondary =
-                        ccursor_from_accesskit_text_position(id, galley, &selection.anchor);
+                    let primary = ccursor_from_accesskit_text_position(id, galley, &selection.focus);
+                    let secondary = ccursor_from_accesskit_text_position(id, galley, &selection.anchor);
                     if let (Some(primary), Some(secondary)) = (primary, secondary) {
                         Some(CCursorRange { primary, secondary })
                     } else {
@@ -1078,23 +1014,17 @@ fn events(
 
     state.set_cursor_range(Some(cursor_range));
 
-    state.undoer.lock().feed_state(
-        ui.input(|i| i.time),
-        &(cursor_range.as_ccursor_range(), text.as_str().to_owned()),
-    );
+    state
+        .undoer
+        .lock()
+        .feed_state(ui.input(|i| i.time), &(cursor_range.as_ccursor_range(), text.as_str().to_owned()));
 
     (any_change, cursor_range)
 }
 
 // ----------------------------------------------------------------------------
 
-fn paint_cursor_selection(
-    ui: &mut Ui,
-    painter: &Painter,
-    pos: Pos2,
-    galley: &Galley,
-    cursor_range: &CursorRange,
-) {
+fn paint_cursor_selection(ui: &mut Ui, painter: &Painter, pos: Pos2, galley: &Galley, cursor_range: &CursorRange) {
     if cursor_range.is_empty() {
         return;
     }
@@ -1107,11 +1037,7 @@ fn paint_cursor_selection(
 
     for ri in min.row..=max.row {
         let row = &galley.rows[ri];
-        let left = if ri == min.row {
-            row.x_offset(min.column)
-        } else {
-            row.rect.left()
-        };
+        let left = if ri == min.row { row.x_offset(min.column) } else { row.rect.left() };
         let right = if ri == max.row {
             row.x_offset(max.column)
         } else {
@@ -1122,22 +1048,12 @@ fn paint_cursor_selection(
             };
             row.rect.right() + newline_size
         };
-        let rect = Rect::from_min_max(
-            pos + vec2(left, row.min_y()),
-            pos + vec2(right, row.max_y()),
-        );
+        let rect = Rect::from_min_max(pos + vec2(left, row.min_y()), pos + vec2(right, row.max_y()));
         painter.rect_filled(rect, 0.0, color);
     }
 }
 
-fn paint_cursor_end(
-    ui: &mut Ui,
-    row_height: f32,
-    painter: &Painter,
-    pos: Pos2,
-    galley: &Galley,
-    cursor: &Cursor,
-) -> Rect {
+fn paint_cursor_end(ui: &mut Ui, row_height: f32, painter: &Painter, pos: Pos2, galley: &Galley, cursor: &Cursor) -> Rect {
     let stroke = ui.visuals().selection.stroke;
 
     let mut cursor_pos = galley.pos_from_cursor(cursor).translate(pos.to_vec2());
@@ -1147,23 +1063,14 @@ fn paint_cursor_end(
     let top = cursor_pos.center_top();
     let bottom = cursor_pos.center_bottom();
 
-    painter.line_segment(
-        [top, bottom],
-        (ui.visuals().text_cursor_width, stroke.color),
-    );
+    painter.line_segment([top, bottom], (ui.visuals().text_cursor_width, stroke.color));
 
     if false {
         // Roof/floor:
         let extrusion = 3.0;
         let width = 1.0;
-        painter.line_segment(
-            [top - vec2(extrusion, 0.0), top + vec2(extrusion, 0.0)],
-            (width, stroke.color),
-        );
-        painter.line_segment(
-            [bottom - vec2(extrusion, 0.0), bottom + vec2(extrusion, 0.0)],
-            (width, stroke.color),
-        );
+        painter.line_segment([top - vec2(extrusion, 0.0), top + vec2(extrusion, 0.0)], (width, stroke.color));
+        painter.line_segment([bottom - vec2(extrusion, 0.0), bottom + vec2(extrusion, 0.0)], (width, stroke.color));
     }
 
     cursor_pos
@@ -1176,12 +1083,7 @@ fn selected_str<'s>(text: &'s dyn TextBuffer, cursor_range: &CursorRange) -> &'s
     text.char_range(min.ccursor.index..max.ccursor.index)
 }
 
-fn insert_text(
-    ccursor: &mut CCursor,
-    text: &mut dyn TextBuffer,
-    text_to_insert: &str,
-    char_limit: usize,
-) {
+fn insert_text(ccursor: &mut CCursor, text: &mut dyn TextBuffer, text_to_insert: &str, char_limit: usize) {
     if char_limit < usize::MAX {
         let mut new_string = text_to_insert;
         // Avoid subtract with overflow panic
@@ -1237,11 +1139,7 @@ fn delete_next_word(text: &mut dyn TextBuffer, min_ccursor: CCursor) -> CCursor 
     delete_selected_ccursor_range(text, [min_ccursor, max_ccursor])
 }
 
-fn delete_paragraph_before_cursor(
-    text: &mut dyn TextBuffer,
-    galley: &Galley,
-    cursor_range: &CursorRange,
-) -> CCursor {
+fn delete_paragraph_before_cursor(text: &mut dyn TextBuffer, galley: &Galley, cursor_range: &CursorRange) -> CCursor {
     let [min, max] = cursor_range.sorted_cursors();
     let min = galley.from_pcursor(PCursor {
         paragraph: min.pcursor.paragraph,
@@ -1255,11 +1153,7 @@ fn delete_paragraph_before_cursor(
     }
 }
 
-fn delete_paragraph_after_cursor(
-    text: &mut dyn TextBuffer,
-    galley: &Galley,
-    cursor_range: &CursorRange,
-) -> CCursor {
+fn delete_paragraph_after_cursor(text: &mut dyn TextBuffer, galley: &Galley, cursor_range: &CursorRange) -> CCursor {
     let [min, max] = cursor_range.sorted_cursors();
     let max = galley.from_pcursor(PCursor {
         paragraph: max.pcursor.paragraph,
@@ -1276,13 +1170,7 @@ fn delete_paragraph_after_cursor(
 // ----------------------------------------------------------------------------
 
 /// Returns `Some(new_cursor)` if we did mutate `text`.
-fn on_key_press(
-    cursor_range: &mut CursorRange,
-    text: &mut dyn TextBuffer,
-    galley: &Galley,
-    key: Key,
-    modifiers: &Modifiers,
-) -> Option<CCursorRange> {
+fn on_key_press(cursor_range: &mut CursorRange, text: &mut dyn TextBuffer, galley: &Galley, key: Key, modifiers: &Modifiers) -> Option<CCursorRange> {
     match key {
         Key::Backspace => {
             let ccursor = if modifiers.mac_cmd {
@@ -1312,10 +1200,7 @@ fn on_key_press(
             } else {
                 delete_selected(text, cursor_range)
             };
-            let ccursor = CCursor {
-                prefer_next_row: true,
-                ..ccursor
-            };
+            let ccursor = CCursor { prefer_next_row: true, ..ccursor };
             Some(CCursorRange::one(ccursor))
         }
 
@@ -1366,9 +1251,7 @@ fn on_key_press(
             None
         }
 
-        Key::P | Key::N | Key::B | Key::F | Key::A | Key::E
-            if cfg!(target_os = "macos") && modifiers.ctrl && !modifiers.shift =>
-        {
+        Key::P | Key::N | Key::B | Key::F | Key::A | Key::E if cfg!(target_os = "macos") && modifiers.ctrl && !modifiers.shift => {
             move_single_cursor(&mut cursor_range.primary, galley, key, modifiers);
             cursor_range.secondary = cursor_range.primary;
             None
@@ -1539,8 +1422,7 @@ fn ccursor_next_line(text: &str, ccursor: CCursor) -> CCursor {
 fn ccursor_previous_word(text: &str, ccursor: CCursor) -> CCursor {
     let num_chars = text.chars().count();
     CCursor {
-        index: num_chars
-            - next_word_boundary_char_index(text.chars().rev(), num_chars - ccursor.index),
+        index: num_chars - next_word_boundary_char_index(text.chars().rev(), num_chars - ccursor.index),
         prefer_next_row: true,
     }
 }
@@ -1548,8 +1430,7 @@ fn ccursor_previous_word(text: &str, ccursor: CCursor) -> CCursor {
 fn ccursor_previous_line(text: &str, ccursor: CCursor) -> CCursor {
     let num_chars = text.chars().count();
     CCursor {
-        index: num_chars
-            - next_line_boundary_char_index(text.chars().rev(), num_chars - ccursor.index),
+        index: num_chars - next_line_boundary_char_index(text.chars().rev(), num_chars - ccursor.index),
         prefer_next_row: true,
     }
 }
@@ -1607,11 +1488,7 @@ fn find_line_start(text: &str, current_index: CCursor) -> CCursor {
     // later.
     let chars_count = text.chars().count();
 
-    let position = text
-        .chars()
-        .rev()
-        .skip(chars_count - current_index.index)
-        .position(|x| x == '\n');
+    let position = text.chars().rev().skip(chars_count - current_index.index).position(|x| x == '\n');
 
     match position {
         Some(pos) => CCursor::new(current_index.index - pos),
@@ -1624,11 +1501,7 @@ fn decrease_indentation(ccursor: &mut CCursor, text: &mut dyn TextBuffer) {
 
     let remove_len = if text.as_str()[line_start.index..].starts_with('\t') {
         Some(1)
-    } else if text.as_str()[line_start.index..]
-        .chars()
-        .take(text::TAB_SIZE)
-        .all(|c| c == ' ')
-    {
+    } else if text.as_str()[line_start.index..].chars().take(text::TAB_SIZE).all(|c| c == ' ') {
         Some(text::TAB_SIZE)
     } else {
         None
