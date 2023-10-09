@@ -469,10 +469,10 @@ impl Font {
 /// See also [`FontImpl::ignore_character`].
 #[inline]
 fn invisible_char(c: char) -> bool {
-    if c == '\r' {
-        // A character most vile and pernicious. Don't display it.
-        return true;
-    }
+    // if c == '\r' {
+    //     // A character most vile and pernicious. Don't display it.
+    //     return true;
+    // }
 
     // See https://github.com/emilk/egui/issues/336
 
